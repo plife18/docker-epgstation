@@ -8,13 +8,6 @@ const output = process.env.OUTPUT;
 const isDualMono = parseInt(process.env.AUDIOCOMPONENTTYPE, 10) == 2;
 const args = ['-y'];
 
-// my settings
-const audioBitrate = '60k';
-const preset = 'veryfast';
-const crf = 23;
-const videoFilter = 'yadif,scale=-2:720';
-
-
 /**
  * 動画長取得関数
  * @param {string} filePath ファイルパス
@@ -46,7 +39,7 @@ Array.prototype.push.apply(args, ['-i', input]);
 // ビデオストリーム設定
 Array.prototype.push.apply(args, ['-map', '0:v', '-c:v', 'libx264']);
 // インターレス解除
-Array.prototype.push.apply(args, ['-vf', videoFilter]);
+Array.prototype.push.apply(args, ['-vf', 'yadif']);
 // オーディオストリーム設定
 if (isDualMono) {
     Array.prototype.push.apply(args, [
@@ -60,26 +53,11 @@ if (isDualMono) {
 } else {
     Array.prototype.push.apply(args, ['-map', '0:a']);
 }
-Array.prototype.push.apply(args, ['-c:a', 'libopus', '-strict', '-2']);
+Array.prototype.push.apply(args, ['-c:a', 'aac']);
 // 字幕ストリーム設定
 Array.prototype.push.apply(args, ['-map', '0:s?', '-c:s', 'mov_text']);
 // 品質設定
-Array.prototype.push.apply(args, ['-preset', preset, '-crf', crf]);
-
-
-// Other my options ...
-Array.prototype.push.apply(args, ['-maxrate:v', '2.5M']);
-Array.prototype.push.apply(args, ['-bufsize:v', 2621440]); // 1024*1024*2.5
-Array.prototype.push.apply(args, [
-    '-aspect', '16:9',
-    '-f', 'mp4',
-    '-ar', '48000',
-    '-ab', audioBitrate,
-    '-ac', '2'
-]);
-
-
-
+Array.prototype.push.apply(args, ['-preset', 'veryfast', '-crf', '26']);
 // 出力ファイル
 Array.prototype.push.apply(args, [output]);
 

@@ -11,11 +11,11 @@ const isDualMono = parseInt(process.env.AUDIOCOMPONENTTYPE, 10) == 2;
 const output_name = path.basename(output, path.extname(output));
 const output_dir = path.dirname(output);
 
-// my settings
-const args = [];
-const audioBitrate = '60k';
-const qp = 27;
-const videoFilter = 'format=nv12,hwupload,deinterlace_vaapi,scale_vaapi=h=720:w=-2:format=p010';
+//FFmpegオプション生成 ここから
+const args = ['-y'];
+const audioBitrate = '80k';
+const videoBitrate = '2M';
+const videoFilter = 'scale=-2:720';
 
 
 /**
@@ -24,86 +24,58 @@ const videoFilter = 'format=nv12,hwupload,deinterlace_vaapi,scale_vaapi=h=720:w=
  * @return number 動画長を返す (秒)
  */
 const getDuration = filePath => {
-  return new Promise((resolve, reject) => {
-      execFile(ffprobe, ['-v', '0', '-show_format', '-of', 'json', filePath], (err, stdout) => {
-          if (err) {
-              reject(err);
+    return new Promise((resolve, reject) => {
+        execFile(ffprobe, ['-v', '0', '-show_format', '-of', 'json', filePath], (err, stdout) => {
+            if (err) {
+                reject(err);
 
-              return;
-          }
+                return;
+            }
 
-          try {
-              const result = JSON.parse(stdout);
-              resolve(parseFloat(result.format.duration));
-          } catch (err) {
-              reject(err);
-          }
-      });
-  });
+            try {
+                const result = JSON.parse(stdout);
+                resolve(parseFloat(result.format.duration));
+            } catch (err) {
+                reject(err);
+            }
+        });
+    });
 };
 
-const gi_args=['-y'];
-
-// vaapi
-const preargs=[];
-Array.prototype.push.apply(gi_args, [
-    '-vaapi_device', '/dev/dri/renderD128',
-    '-hwaccel', 'vaapi',
-    '-hwaccel_output_format', 'vaapi'
-]);
-
 // 字幕用
-Array.prototype.push.apply(gi_args, ['-fix_sub_duration']);
+//Array.prototype.push.apply(args, ['-fix_sub_duration']);
 // input 設定
 //Array.prototype.push.apply(args, ['-i', input]);
 // ビデオストリーム設定
-Array.prototype.push.apply(args, ['-map', '0:v', '-c:v', 'hevc_vaapi', '-profile:v', '2']);
+Array.prototype.push.apply(args, ['-map', '0:v', '-c:v', 'h264_v4l2m2m']);
 // インターレス解除
 Array.prototype.push.apply(args, ['-vf', videoFilter]);
 // オーディオストリーム設定
 if (isDualMono) {
-  Array.prototype.push.apply(args, [
-      '-filter_complex',
-      'channelsplit[FL][FR]',
-      '-map', '[FL]',
-      '-map', '[FR]',
-      '-metadata:s:a:0', 'language=jpn',
-      '-metadata:s:a:1', 'language=eng',
-  ]);
+    Array.prototype.push.apply(args, [
+        '-filter_complex',
+        'channelsplit[FL][FR]',
+        '-map', '[FL]',
+        '-map', '[FR]',
+        '-metadata:s:a:0', 'language=jpn',
+        '-metadata:s:a:1', 'language=eng',
+    ]);
 } else {
-  Array.prototype.push.apply(args, ['-map', '0:a']);
+    Array.prototype.push.apply(args, ['-map', '0:a']);
 }
 Array.prototype.push.apply(args, ['-c:a', 'libopus', '-strict', '-2']);
 // 字幕ストリーム設定
-Array.prototype.push.apply(args, ['-map', '0:s?', '-c:s', 'mov_text']);
+//Array.prototype.push.apply(args, ['-map', '0:s?', '-c:s', 'mov_text']);
 // 品質設定
-//Array.prototype.push.apply(args, ['-preset', preset, '-crf', crf]);
+//Array.prototype.push.apply(args, ['-preset', 'veryfast', '-crf', '26']);
+
+Array.prototype.push.apply(args, [
+    '-b:v', videoBitrate,
+    '-b:a', audioBitrate,
+    '-aspect', '16:9'
+])
 
 
-// Other my options ...
-//Array.prototype.push.apply(args, ['-ignore_unknown']);
-Array.prototype.push.apply(args,[
-    '-aspect', '16:9',
-    '-q', '-1',
-    '-qp', qp,
-    '-g', '300',
-    '-bf', '8',
-    '-i_qfactor', '0.7143',
-    '-b_qfactor', '1.3',
-    '-qmin', '20',
-    '-qmax', '51',
-    //'-compression_level', '0',
-    '-f', 'mp4',
-    '-ar', '48000',
-    '-ab', audioBitrate,
-    '-ac', '2'
-]);
-
-
-let gi_str = '';
-for (let i of gi_args) {
-  gi_str += ` ${i}`;
-}
 
 let str = '';
 for (let i of args) {
@@ -111,6 +83,7 @@ for (let i of args) {
 }
 // console.error(str);  //オプションを確認するときコメントアウトを外す
 //FFmpegオプション生成 ここまで
+
 
 
 
@@ -127,7 +100,7 @@ for (let i of args) {
     let update_log_flag = false;
     let log = '';
 
-    const jlse_args = ['-i', input, '-e', '-g', gi_str, '-o', str,'-r','-d', output_dir, '-n', output_name];
+    const jlse_args = ['-i', input, '-e', '-o', str,'-r','-d', output_dir, '-n', output_name];
     console.error(jlse_args);
     
     var env = Object.create( process.env );

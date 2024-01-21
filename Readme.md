@@ -1,8 +1,9 @@
 # 自動CMカット, HWエンコード対応版 docker-epgstation
 
 [fork元の本家](https://github.com/l3tnun/docker-mirakurun-epgstation) と比べて以下の変更があります。
+- [追加]　AArch64/Arm64 専用 (Raspberry Pi 3 ~ など)
 - [追加]　[JoinLogoScpTrialSetLinux](https://github.com/tobitti0/JoinLogoScpTrialSetLinux) をベースとした自動CMカット対応
-- [追加]　vaapi によるハードウェアエンコード (h264, hevc) 対応
+- [追加]　~~vaapi~~ v4l2m2 (Video for Linux2 Memory to Memory I/F) によるハードウェアエンコード (h264, ~~hevc~~) 対応
 - [追加]　ffmpeg の opus, fdkaac 対応
 - [削除]　mirakurun コンテナ周り
 
@@ -15,25 +16,31 @@
 以下、いくつかの差分, 留意点です。
 
 
+## AArch64/Arm64
+Raspberry Pi 4B で動作確認。
+docker イメージのビルドは 25分くらい掛かったと思います。
+
+AArch64 であれば良いので、例えば M1 以降の Apple シリコン搭載 Mac でビルドを行うと、
+３分程度でビルドでき、問題なく動作します。
+
+
+
 ## epgstation/config/*.js
 適当なパラメータを設定した状態で置いてあります。
 かなりサイズを小さくする方向に振った設定になっているので、適当に変更, 調整してください。
-- enc_*: CMカットなし
-- jlse_*: CMカットあり
-
-- *_software: x264 ソフトウェアエンコード
-- *_vaapi: h264_vaapi ハードウェアエンコード
-- *_vaapi-hevc10bit: hevc_vaapi(10bit) ハードウェアエンコード
+- enc: CMカットなし, x264 ソフトウェアエンコード
+- enc_h264-v4l2m2m: CMカットなし, h264_v4l2m2m ハードウェアエンコード
+- jlse_h264-v4l2m2m: CMカット**あり**, h264_v4l2m2m ハードウェアエンコード
 
 
-## vaapi ハードウェアエンコードについて
-本 dockerイメージでの vaapi ハードウェアエンコードは intel CPU のみ動作可能で、
-- h264_vaapi: Broadwell 以降
-- hevc_vaapi(10bit): Kaby Lake 以降
+## ~~vaapi~~ v4l2m2m ハードウェアエンコードについて
+Raspberry Pi 4B で動作確認。
 
-だと思います。
-`epgstation/config/*_hevc10bit.js` 内で `-profile:v 2` の指定を外すと、
-HEVC (8bit) になり Sklylake 以降でも動くようになるようです。
+エンコードは vf など無しで 67fps, load: 50-60%、
+CMカットあり, 720p で 38fps, load: 40% 程度でした。
+
+ライブ視聴は「外部アプリで開く」を有効にして `m2ts 1080p` を選択すると、
+load: 30-40% で遅延なく再生できました。
 
 
 

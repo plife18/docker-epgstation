@@ -2,7 +2,7 @@ FROM l3tnun/epgstation:v2.6.20-debian
 
 ENV DEV="make gcc git g++ automake curl wget autoconf build-essential libass-dev libfreetype6-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev pkg-config texinfo zlib1g-dev \
         ninja-build cmake meson libboost-all-dev"
-ENV FFMPEG_VERSION=4.3.6
+ENV FFMPEG_VERSION=4.4.4
 
 RUN apt-get update && \
     apt-get -y install $DEV && \
@@ -10,10 +10,9 @@ RUN apt-get update && \
     apt-get -y install libx265-dev libnuma-dev && \
     apt-get -y install libasound2 libass9 libvdpau1 libva-x11-2 libva-drm2 libxcb-shm0 libxcb-xfixes0 libxcb-shape0 libvorbisenc2 libtheora0 libaribb24-dev && \
 \
-### Added for vaapi support
     echo "deb http://http.us.debian.org/debian buster main contrib non-free" | tee -a /etc/apt/sources.list && \
     apt-get update && \
-    apt-get -y install i965-va-driver-shaders intel-media-va-driver-non-free vainfo libfdk-aac-dev libfdk-aac1 && \
+    apt-get -y install libfdk-aac-dev libfdk-aac1 && \
 \
 # avisynth+
     cd /tmp && \
@@ -49,7 +48,6 @@ RUN apt-get update && \
       --enable-nonfree \
       --disable-debug \
       --disable-doc \
-      --enable-vaapi \
       --enable-libfdk-aac \
       --enable-avisynth \
     && \
@@ -67,7 +65,11 @@ RUN apt-get update && \
 # l-smash-source
     cd /tmp && \
     git clone -b 20200728 https://github.com/HolyWu/L-SMASH-Works.git && \
+    git clone https://github.com/tobitti0/chapter_exe.git -b arm-test && \
+    cp chapter_exe/src/sse2neon.h L-SMASH-Works/AviSynth/emmintrin.h && \
     cd L-SMASH-Works/AviSynth && \
+    sed -i.bk -e '42,43d' -e "72aif host_machine.cpu_family().startswith('arm')\n add_project_arguments('-mfpu=neon', language : ['c', 'cpp'])\nendif\n" meson.build && \
+    sed -i.bk '52d' video_output.cpp && \
     LDFLAGS="-Wl,-Bsymbolic" meson build && \
     cd build && \
     ninja -v && \
@@ -80,7 +82,9 @@ RUN apt-get update && \
     git submodule foreach git pull origin master && \
     \
     ## chapter_exe
-    cd /tmp/JoinLogoScpTrialSetLinux/modules/chapter_exe/src && \
+    cd /tmp/chapter_exe/src && \
+    cp -a Makefile Makefile_org && \
+    sed s/-mfpu=neon// Makefile_org > Makefile && \
     make -j$(nproc) && \
     mv chapter_exe /tmp/JoinLogoScpTrialSetLinux/modules/join_logo_scp_trial/bin && \
     \

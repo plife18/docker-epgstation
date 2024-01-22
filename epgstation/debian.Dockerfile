@@ -2,7 +2,7 @@ FROM l3tnun/epgstation:v2.6.20-debian
 
 ENV DEV="make gcc git g++ automake curl wget autoconf build-essential libass-dev libfreetype6-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev pkg-config texinfo zlib1g-dev \
         ninja-build cmake meson libboost-all-dev"
-ENV FFMPEG_VERSION=4.4.4
+ENV FFMPEG_VERSION=5.1.4
 
 RUN apt-get update && \
     apt-get -y install $DEV && \
@@ -64,12 +64,10 @@ RUN apt-get update && \
 \
 # l-smash-source
     cd /tmp && \
-    git clone -b 20200728 https://github.com/HolyWu/L-SMASH-Works.git && \
+    git clone -b aarch64 https://github.com/plife18/L-SMASH-Works.git && \
     git clone https://github.com/tobitti0/chapter_exe.git -b arm-test && \
     cp chapter_exe/src/sse2neon.h L-SMASH-Works/AviSynth/emmintrin.h && \
     cd L-SMASH-Works/AviSynth && \
-    sed -i.bk -e '42,43d' -e "72aif host_machine.cpu_family().startswith('arm')\n add_project_arguments('-mfpu=neon', language : ['c', 'cpp'])\nendif\n" meson.build && \
-    sed -i.bk '52d' video_output.cpp && \
     LDFLAGS="-Wl,-Bsymbolic" meson build && \
     cd build && \
     ninja -v && \

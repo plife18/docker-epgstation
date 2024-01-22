@@ -20,8 +20,8 @@ epgUpdateIntervalTime: 10
 conflictPriority: 1
 recPriority: 2
 
-recordedFormat: '%YEAR%年%MONTH%月%DAY%日%HOUR%時%MIN%分%SEC%秒-%TITLE%'
-recordedFileExtension: .m2ts
+recordedFormat: '%TITLE%_%SHORTYEAR%%MONTH%%DAY%-%HOUR%%MIN%@%HALF_WIDTH_CHNAME%'
+recordedFileExtension: .ts
 recorded:
     - name: recorded
       path: '%ROOT%/recorded'
